@@ -1,5 +1,7 @@
 package com.dotmarketing.business.cache.provider.redis;
 
+import com.codahale.metrics.Meter;
+import com.codahale.metrics.SharedMetricRegistries;
 import com.dotcms.enterprise.cache.provider.CacheProviderAPI;
 import com.dotmarketing.business.CacheLocator;
 import com.dotmarketing.business.DotStateException;
@@ -44,6 +46,9 @@ public class RedissonProProvider extends CacheProvider {
     protected void init(Config config) throws  Exception {
         redissonClient = Redisson.create(config);
         initialized=true;
+        if(com.dotmarketing.util.Config.getBooleanProperty("redisson.pro.metrics.create", true)) {
+            SharedMetricRegistries.getOrCreate("redissonMetrics");
+        }
     }
 
     private RLocalCachedMap<String,Object> getLocalCache(String cacheName){
@@ -274,5 +279,9 @@ public class RedissonProProvider extends CacheProvider {
     @Override
     public void shutdown() {
         redissonClient.shutdown();
+    }
+
+    public static Map<String, Meter> getMetrics() {
+        return SharedMetricRegistries.getOrCreate("redissonMetrics").getMeters();
     }
 }
