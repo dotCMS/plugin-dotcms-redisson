@@ -84,7 +84,7 @@ public class RedissonProProvider extends CacheProvider {
                     Logger.info(this.getClass(), "invalidationpolicy is set to " + cacheOptions.getInvalidationPolicy());
                     Logger.info(this.getClass(), "maxidle is set to " + cacheOptions.getMaxIdleInMillis());
                     Logger.info(this.getClass(), "timetolive is set to " + cacheOptions.getTimeToLiveInMillis());
-                    lcache = redissonClient.getLocalCachedMap(cacheName, cacheOptions);
+                    lcache = redissonClient.getClusteredLocalCachedMap(cacheName, cacheOptions);
                     lgroups.put(cacheName,lcache);
                     Logger.info(this.getClass(),"***\t Finished Building Cache : " + cacheName);
                 }
