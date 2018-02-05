@@ -104,7 +104,7 @@ public class RedissonProProvider extends CacheProvider {
             synchronized (cacheName.intern()) {
                 rcache = rgroups.get(cacheName);
                 if ( rcache == null ) {
-                    rcache =  redissonClient.getMap(cacheName);
+                    rcache =  redissonClient.getClusteredMapCache(cacheName);
                     rgroups.put(cacheName,rcache);
                 }
             }
