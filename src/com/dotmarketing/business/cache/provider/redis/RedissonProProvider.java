@@ -217,7 +217,7 @@ public class RedissonProProvider extends CacheProvider {
 
     @Override
     public void remove(String group, String key) {
-        getCacheMap(group).fastRemove(key);
+        getCacheMap(group).fastRemoveAsync(key);
     }
 
     @Override
