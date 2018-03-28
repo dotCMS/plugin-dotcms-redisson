@@ -1,5 +1,5 @@
 Manifest-Version: 1.0
 Deploy-Class: 
-Plugin-Name: dotCMS Redisson 
-Plugin-Version: 1.0
+Plugin-Name: dotCMS Redisson Plugin
+Plugin-Version: 2.0
 Author: dotCMS

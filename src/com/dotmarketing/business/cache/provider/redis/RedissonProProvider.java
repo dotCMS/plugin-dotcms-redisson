@@ -1,5 +1,23 @@
 package com.dotmarketing.business.cache.provider.redis;
 
+import java.io.InputStream;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.TimeUnit;
+
+import org.redisson.Redisson;
+import org.redisson.api.ClusteredLocalCachedMapOptions;
+import org.redisson.api.RLocalCachedMap;
+import org.redisson.api.RMap;
+import org.redisson.api.RedissonClient;
+import org.redisson.config.Config;
+
 import com.codahale.metrics.Meter;
 import com.codahale.metrics.SharedMetricRegistries;
 import com.dotcms.enterprise.cache.provider.CacheProviderAPI;
@@ -7,17 +25,6 @@ import com.dotmarketing.business.CacheLocator;
 import com.dotmarketing.business.DotStateException;
 import com.dotmarketing.business.cache.provider.CacheProvider;
 import com.dotmarketing.util.Logger;
-import org.redisson.Redisson;
-import org.redisson.api.LocalCachedMapOptions;
-import org.redisson.api.RLocalCachedMap;
-import org.redisson.api.RMap;
-import org.redisson.api.RedissonClient;
-import org.redisson.config.Config;
-
-import java.io.InputStream;
-import java.util.*;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.TimeUnit;
 
 public class RedissonProProvider extends CacheProvider {
 
@@ -72,7 +79,7 @@ public class RedissonProProvider extends CacheProvider {
                 }
 
                 if ( lcache == null ) {
-                    LocalCachedMapOptions cacheOptions = populateConfig(cacheName);
+                	ClusteredLocalCachedMapOptions cacheOptions = populateConfig(cacheName);
                     if(cacheOptions == null){
                         noLocalCache.add(cacheName);
                         return null;
@@ -81,7 +88,8 @@ public class RedissonProProvider extends CacheProvider {
                     Logger.info(this.getClass(),"***\t Building Cache : " + cacheName + " with the following options");
                     Logger.info(this.getClass(), "evictionpolicy is set to " + cacheOptions.getEvictionPolicy());
                     Logger.info(this.getClass(), "cachesize is set to " + cacheOptions.getCacheSize());
-                    Logger.info(this.getClass(), "invalidationpolicy is set to " + cacheOptions.getInvalidationPolicy());
+                    Logger.info(this.getClass(), "syncStrategy is set to " + cacheOptions.getSyncStrategy());
+                    Logger.info(this.getClass(), "reconnectionStrategy is set to " + cacheOptions.getReconnectionStrategy());
                     Logger.info(this.getClass(), "maxidle is set to " + cacheOptions.getMaxIdleInMillis());
                     Logger.info(this.getClass(), "timetolive is set to " + cacheOptions.getTimeToLiveInMillis());
                     lcache = redissonClient.getClusteredLocalCachedMap(cacheName, cacheOptions);
@@ -112,8 +120,8 @@ public class RedissonProProvider extends CacheProvider {
         return rcache;
     }
 
-    private LocalCachedMapOptions populateConfig(String cacheName){
-        LocalCachedMapOptions options = LocalCachedMapOptions.defaults();
+    private ClusteredLocalCachedMapOptions populateConfig(String cacheName) {
+        ClusteredLocalCachedMapOptions options = ClusteredLocalCachedMapOptions.defaults();
 
         //Get String Values for all possible properties
         String evictionPolicy = getConfigProperty(cacheName,"evictionpolicy", "lfu");
@@ -128,22 +136,24 @@ public class RedissonProProvider extends CacheProvider {
 
         //Setup Eviction Policy
         if(evictionPolicy.equalsIgnoreCase("lfu")){
-            options.evictionPolicy(LocalCachedMapOptions.EvictionPolicy.LFU);
+            options.evictionPolicy(ClusteredLocalCachedMapOptions.EvictionPolicy.LFU);
         } else if (evictionPolicy.equalsIgnoreCase("lru")){
-            options.evictionPolicy(LocalCachedMapOptions.EvictionPolicy.LRU);
+            options.evictionPolicy(ClusteredLocalCachedMapOptions.EvictionPolicy.LRU);
         } else if (evictionPolicy.equalsIgnoreCase("soft")){
-            options.evictionPolicy(LocalCachedMapOptions.EvictionPolicy.SOFT);
+            options.evictionPolicy(ClusteredLocalCachedMapOptions.EvictionPolicy.SOFT);
         } else {
-            options.evictionPolicy(LocalCachedMapOptions.EvictionPolicy.NONE);
+            options.evictionPolicy(ClusteredLocalCachedMapOptions.EvictionPolicy.NONE);
         }
 
         //Setup Invalidation policy
         if(invalidationpolicy.equalsIgnoreCase("ON_CHANGE_WITH_CLEAR_ON_RECONNECT")){
-            options.invalidationPolicy(LocalCachedMapOptions.InvalidationPolicy.ON_CHANGE_WITH_CLEAR_ON_RECONNECT);
+            options.syncStrategy(ClusteredLocalCachedMapOptions.SyncStrategy.INVALIDATE);
+            options.reconnectionStrategy(ClusteredLocalCachedMapOptions.ReconnectionStrategy.CLEAR);
         } else if (invalidationpolicy.equalsIgnoreCase("ON_CHANGE_WITH_LOAD_ON_RECONNECT")){
-            options.invalidationPolicy(LocalCachedMapOptions.InvalidationPolicy.ON_CHANGE_WITH_LOAD_ON_RECONNECT);
+            options.syncStrategy(ClusteredLocalCachedMapOptions.SyncStrategy.INVALIDATE);
+            options.reconnectionStrategy(ClusteredLocalCachedMapOptions.ReconnectionStrategy.LOAD);
         } else{
-            options.invalidationPolicy(LocalCachedMapOptions.InvalidationPolicy.ON_CHANGE);
+            options.invalidationPolicy(ClusteredLocalCachedMapOptions.InvalidationPolicy.ON_CHANGE);
         }
 
         //Setup Cache Size
